@@ -44,16 +44,23 @@
         </select>
     </div>
     
-    <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <a href="https://wa.me/{{ patient.phone|replace('+', '')|replace(' ', '')|replace('-', '') }}?text={{ 'message_placeholder'|urlencode }}"
-           id="whatsappLink"
-           target="_blank"
-           class="btn"
-           style="background: #25D366; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
-            📱 Open WhatsApp & Send
-        </a>
-        <a href="/patients" class="btn" style="background: #6c757d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">Cancel</a>
-    </div>
+    <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+    <a href="https://wa.me/{{ patient.phone|replace('+', '')|replace(' ', '')|replace('-', '') }}?text={{ message|urlencode if message else '' }}"
+       target="_blank"
+       class="btn"
+       style="background: #25D366; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
+        📱 Open WhatsApp & Send
+    </a>
+    
+    <form method="POST" action="/log_reminder/{{ patient.id }}" style="display: inline-block;">
+        <input type="hidden" name="reminder_type" value="{{ reminder_type }}">
+        <button type="submit" class="btn" style="background: #6c757d; padding: 12px 24px;">
+            📝 Log This Reminder (Click After Sending)
+        </button>
+    </form>
+    
+    <a href="/patients" class="btn" style="background: #6c757d; padding: 12px 24px; text-decoration: none;">Cancel</a>
+</div>
 </div>
 
 <script>

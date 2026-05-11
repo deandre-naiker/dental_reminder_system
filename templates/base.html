@@ -139,10 +139,12 @@
                     <span>Brilliant Bites Dental</span>
                 </h1>
                 <div class="user-info">
-                    <span>👤 {{ session.full_name }} ({{ session.role }})</span>
-                    <a href="/logout" style="color: #c8e6c9; text-decoration: none; margin-left: 15px;">Logout</a>
-                </div>
-            </div>
+    <span>👤 {{ session.full_name }} ({{ session.role }})</span>
+    <div>
+        <a href="/change_password" style="color: #c8e6c9; margin-right: 15px;">🔑 Change Password</a>
+        <a href="/logout" style="color: #c8e6c9;">Logout</a>
+    </div>
+</div>
         </div>
         <div class="nav">
             <a href="/">📊 Dashboard</a>
@@ -152,6 +154,7 @@
             {% if session.role == 'admin' %}
             <a href="/staff">👔 Staff</a>
             <a href="/activity_logs">📋 Activity</a>
+			<a href="/country_codes">🌍 Country Codes</a>
             {% endif %}
         </div>
         <div class="content">

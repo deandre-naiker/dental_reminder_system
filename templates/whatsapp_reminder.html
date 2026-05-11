@@ -94,6 +94,25 @@
     
     // Initial update
     updateMessage();
+	
+// Parse phone number for WhatsApp (removes + sign for wa.me)
+function getWhatsAppNumber(phone) {
+    if (!phone) return '';
+    
+    // Remove spaces and dashes
+    let cleaned = phone.replace(/[\s\-]/g, '');
+    
+    // WhatsApp links work with or without +, but better without
+    if (cleaned.startsWith('+')) {
+        return cleaned.substring(1);  // Remove the + for wa.me
+    }
+    
+    return cleaned;
+}
+
+const phoneNumber = getWhatsAppNumber("{{ patient.phone }}");
+const whatsappLink = document.getElementById('whatsappLink');
+whatsappLink.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
 </script>
 
 <style>

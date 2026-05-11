@@ -7,6 +7,26 @@ import re
 from werkzeug.security import generate_password_hash, check_password_hash
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
+import time
+from functools import wraps
+
+
+def retry_on_lock(max_retries=5, delay=0.5):
+    """Retry database operation if locked"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except sqlite3.OperationalError as e:
+                    if "database is locked" in str(e) and attempt < max_retries - 1:
+                        time.sleep(delay * (attempt + 1))
+                        continue
+                    raise
+            return None
+        return wrapper
+    return decorator
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this-in-production'
@@ -33,7 +53,7 @@ else:
 # DATABASE FUNCTIONS
 # ============================================
 def get_db():
-    conn = sqlite3.connect('dental.db')
+    conn = sqlite3.connect('dental.db', timeout =30)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -366,6 +386,7 @@ def patients():
 
 @app.route('/add_patient', methods=['GET', 'POST'])
 @login_required
+@retry_on_lock()
 def add_patient():
     if request.method == 'POST':
         name = request.form['name']
@@ -408,6 +429,7 @@ def add_patient():
 
 @app.route('/edit_patient/<int:patient_id>', methods=['GET', 'POST'])
 @login_required
+@retry_on_lock()
 def edit_patient(patient_id):
     conn = get_db()
 
@@ -457,6 +479,7 @@ def edit_patient(patient_id):
 
 @app.route('/delete_patient/<int:patient_id>', methods=['POST'])
 @login_required
+@retry_on_lock()
 def delete_patient(patient_id):
     conn = get_db()
     patient = conn.execute("SELECT name FROM patients WHERE id=?", (patient_id,)).fetchone()
@@ -475,6 +498,7 @@ def delete_patient(patient_id):
 
 @app.route('/update_visit/<int:patient_id>', methods=['POST'])
 @login_required
+@retry_on_lock()
 def update_visit(patient_id):
     visit_type = request.form['visit_type']
     visit_date = request.form['visit_date']

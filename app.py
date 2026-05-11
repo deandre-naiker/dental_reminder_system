@@ -763,6 +763,47 @@ def check_and_send_reminders():
     conn.close()
 
 
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    """Allow any logged-in user to change their own password"""
+    if request.method == 'POST':
+        current_password = request.form['current_password']
+        new_password = request.form['new_password']
+        confirm_password = request.form['confirm_password']
+
+        if new_password != confirm_password:
+            flash('New passwords do not match', 'danger')
+            return redirect(url_for('change_password'))
+
+        if len(new_password) < 4:
+            flash('Password must be at least 4 characters', 'danger')
+            return redirect(url_for('change_password'))
+
+        conn = get_db()
+        user = conn.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],)).fetchone()
+
+        if check_password_hash(user['password'], current_password):
+            hashed_new = generate_password_hash(new_password)
+            conn.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_new, session['user_id']))
+            conn.commit()
+            conn.close()
+
+            flash('Password changed successfully! Please login again.', 'success')
+            return redirect(url_for('logout'))
+        else:
+            conn.close()
+            flash('Current password is incorrect', 'danger')
+
+    return render_template('change_password.html')
+
+
+@app.route('/country_codes')
+@login_required
+def country_codes():
+    """Show country codes reference"""
+    return render_template('country_codes.html')
+
 # ============================================
 # MAIN EXECUTION
 # ============================================

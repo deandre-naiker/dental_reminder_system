@@ -539,9 +539,44 @@ def schedule_appointment(patient_id):
 @login_required
 def reminder_logs():
     conn = get_db()
-    logs = conn.execute("SELECT * FROM reminder_logs ORDER BY sent_at DESC LIMIT 200").fetchall()
+
+    # Get filter parameters
+    search = request.args.get('search', '')
+    status_filter = request.args.get('status', '')
+    type_filter = request.args.get('type', '')
+
+    # Build query with filters
+    query = "SELECT * FROM reminder_logs WHERE 1=1"
+    params = []
+
+    if search:
+        query += " AND patient_name LIKE ?"
+        params.append(f'%{search}%')
+
+    if status_filter:
+        query += " AND status = ?"
+        params.append(status_filter)
+
+    if type_filter:
+        query += " AND reminder_type LIKE ?"
+        params.append(f'%{type_filter}%')
+
+    query += " ORDER BY sent_at DESC LIMIT 500"
+
+    logs = conn.execute(query, params).fetchall()
+
+    # Get stats
+    stats = {
+        'total': conn.execute("SELECT COUNT(*) as count FROM reminder_logs").fetchone()['count'],
+        'sent': conn.execute("SELECT COUNT(*) as count FROM reminder_logs WHERE status = 'sent'").fetchone()['count'],
+        'failed': conn.execute("SELECT COUNT(*) as count FROM reminder_logs WHERE status = 'failed'").fetchone()[
+            'count']
+    }
+
     conn.close()
-    return render_template('logs.html', logs=logs)
+
+    return render_template('reminder_logs.html', logs=logs, stats=stats,
+                           search=search, status=status_filter, type=type_filter)
 
 
 @app.route('/activity_logs')

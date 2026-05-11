@@ -607,6 +607,28 @@ def whatsapp_reminder(patient_id):
     return render_template('whatsapp_reminder.html', patient=patient, reminder_type='both')
 
 
+@app.route('/log_reminder/<int:patient_id>', methods=['POST'])
+@login_required
+def log_reminder(patient_id):
+    """Manually log a reminder that was sent"""
+    reminder_type = request.form.get('reminder_type', 'both')
+
+    conn = get_db()
+    patient = conn.execute("SELECT name FROM patients WHERE id = ?", (patient_id,)).fetchone()
+
+    if patient:
+        conn.execute(
+            "INSERT INTO reminder_logs (patient_id, patient_name, reminder_type, method, status, sent_by) VALUES (?, ?, ?, ?, ?, ?)",
+            (patient_id, patient['name'], reminder_type, 'whatsapp', 'sent', session['user_id'])
+        )
+        conn.commit()
+        flash(f'✅ Reminder to {patient["name"]} logged successfully!', 'success')
+    else:
+        flash('Patient not found', 'danger')
+
+    conn.close()
+    return redirect(url_for('patients'))
+
 # ============================================
 # MAIN
 # ============================================

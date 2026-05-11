@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Edit Patient: {{ patient.name }}</h2>
+
+<form method="POST">
+    <div class="form-group">
+        <label>Name *</label>
+        <input type="text" name="name" value="{{ patient.name }}" required>
+    </div>
+    
+    <div class="form-group">
+        <label>Phone Number (for WhatsApp)</label>
+        <input type="tel" name="phone" value="{{ patient.phone or '' }}" placeholder="1234567890">
+    </div>
+    
+    <div class="form-group">
+        <label>Email</label>
+        <input type="email" name="email" value="{{ patient.email or '' }}">
+    </div>
+    
+    <div class="form-group">
+        <label>Reminder Type</label>
+        <select name="reminder_type" required style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+            <option value="both" {% if patient.reminder_type == 'both' %}selected{% endif %}>Both (6-month cleaning & 3-month checkup)</option>
+            <option value="cleaning" {% if patient.reminder_type == 'cleaning' %}selected{% endif %}>Only 6-month Cleaning</option>
+            <option value="checkup" {% if patient.reminder_type == 'checkup' %}selected{% endif %}>Only 3-month Checkup</option>
+        </select>
+        <small style="color: #666; display: block; margin-top: 5px;">Choose which reminders this patient should receive</small>
+    </div>
+    
+    <div class="form-group">
+        <label>Last Cleaning Date</label>
+        <input type="date" name="last_cleaning" value="{{ patient.last_cleaning or '' }}">
+        <small style="color: #666; display: block; margin-top: 5px;">Next cleaning will be 6 months from this date (if reminder type includes cleaning)</small>
+    </div>
+    
+    <div class="form-group">
+        <label>Last Checkup Date</label>
+        <input type="date" name="last_checkup" value="{{ patient.last_checkup or '' }}">
+        <small style="color: #666; display: block; margin-top: 5px;">Next checkup will be 3 months from this date (if reminder type includes checkup)</small>
+    </div>
+    
+    <div class="form-group">
+        <label>Notes</label>
+        <textarea name="notes" rows="3" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">{{ patient.notes or '' }}</textarea>
+    </div>
+    
+    <button type="submit" class="btn" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">Save Changes</button>
+    <a href="/patients" class="btn" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">Cancel</a>
+</form>
+
+<style>
+    .form-group {
+        margin-bottom: 20px;
+    }
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+    input, select, textarea {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 16px;
+    }
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: #2c5f8a;
+    }
+    .btn {
+        font-size: 14px;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}

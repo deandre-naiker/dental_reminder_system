@@ -11,7 +11,7 @@ import time
 from functools import wraps
 
 
-def retry_on_lock(max_retries=5, delay=0.5):
+def retry_on_lock(max_retries=10, delay=1.0):
     """Retry database operation if locked"""
     def decorator(func):
         @wraps(func)
@@ -53,7 +53,7 @@ else:
 # DATABASE FUNCTIONS
 # ============================================
 def get_db():
-    conn = sqlite3.connect('dental.db', timeout =30)
+    conn = sqlite3.connect('dental.db', timeout =120)
     conn.row_factory = sqlite3.Row
     return conn
 

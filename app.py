@@ -629,6 +629,119 @@ def log_reminder(patient_id):
     conn.close()
     return redirect(url_for('patients'))
 
+
+# ============================================
+# BACKUP SYSTEM
+# ============================================
+@app.route('/backup_database')
+@login_required
+@admin_required
+def backup_database():
+    """Download database backup - use this to save your data"""
+    import shutil
+    from flask import send_file
+    from datetime import datetime
+
+    try:
+        # Close any open connections
+        conn = get_db()
+        conn.close()
+
+        # Create backup filename with timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_filename = f'dental_backup_{timestamp}.db'
+
+        # Copy the database to a backup file
+        shutil.copy2('dental.db', backup_filename)
+
+        # Send the file to user
+        return send_file(
+            backup_filename,
+            as_attachment=True,
+            download_name=backup_filename,
+            mimetype='application/x-sqlite3'
+        )
+    except Exception as e:
+        flash(f'Backup failed: {str(e)}', 'danger')
+        return redirect(url_for('index'))
+
+
+@app.route('/export_patients')
+@login_required
+@admin_required
+def export_patients():
+    """Export all patients to CSV (Excel readable)"""
+    import csv
+    from flask import Response
+    from datetime import datetime
+
+    conn = get_db()
+    patients = conn.execute("SELECT * FROM patients WHERE is_active = 1").fetchall()
+    conn.close()
+
+    # Create CSV content
+    output = []
+    output.append(['ID', 'Name', 'Phone', 'Email', 'Reminder Type', 'Last Cleaning', 'Next Cleaning', 'Last Checkup',
+                   'Next Checkup', 'Notes', 'Created At'])
+
+    for p in patients:
+        output.append([
+            p['id'], p['name'], p['phone'] or '', p['email'] or '',
+                                p['reminder_type'] or 'both', p['last_cleaning'] or '', p['next_cleaning'] or '',
+                                p['last_checkup'] or '', p['next_checkup'] or '', p['notes'] or '',
+                                p['created_at'] or ''
+        ])
+
+    # Convert to string
+    csv_string = '\n'.join([','.join([f'"{str(cell)}"' for cell in row]) for row in output])
+
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    return Response(
+        csv_string,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=patients_export_{timestamp}.csv'}
+    )
+
+
+@app.route('/restore_database', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def restore_database():
+    """Restore database from backup file"""
+    import shutil
+    import os
+
+    if request.method == 'POST':
+        if 'backup_file' not in request.files:
+            flash('No file selected', 'danger')
+            return redirect(url_for('restore_database'))
+
+        file = request.files['backup_file']
+        if file.filename == '':
+            flash('No file selected', 'danger')
+            return redirect(url_for('restore_database'))
+
+        if not file.filename.endswith('.db'):
+            flash('Invalid file type. Please upload a .db file', 'danger')
+            return redirect(url_for('restore_database'))
+
+        try:
+            # Backup current database before restoring (just in case)
+            from datetime import datetime
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            shutil.copy2('dental.db', f'dental_before_restore_{timestamp}.db')
+
+            # Save uploaded file
+            file.save('dental.db')
+
+            flash('Database restored successfully!', 'success')
+            return redirect(url_for('index'))
+        except Exception as e:
+            flash(f'Restore failed: {str(e)}', 'danger')
+            return redirect(url_for('restore_database'))
+
+    return render_template('restore_database.html')
+
 # ============================================
 # MAIN
 # ============================================

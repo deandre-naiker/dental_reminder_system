@@ -126,9 +126,10 @@
             <a href="/add_patient">➕ Add Patient</a>
             <a href="/reminder_logs">📝 Reminder Logs</a>
             {% if session.role == 'admin' %}
-            <a href="/staff">👔 Staff</a>
-            <a href="/activity_logs">📋 Activity Logs</a>
-            {% endif %}
+			<a href="/staff">👔 Staff</a>
+			<a href="/activity_logs">📋 Activity Logs</a>
+			<a href="/restore_database">💾 Backup/Restore</a>  <!-- Add this line -->
+			{% endif %}
             <a href="/country_codes">🌍 Country Codes</a>
         </div>
         <div class="content">

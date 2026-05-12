@@ -6,61 +6,96 @@
 <div class="card" style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
     <h3>{{ patient.name }}</h3>
     <p><strong>Phone:</strong> {{ patient.phone }}</p>
-    <p><strong>Next Cleaning:</strong> {{ patient.next_cleaning or 'Not scheduled' }}</p>
-    <p><strong>Next Checkup:</strong> {{ patient.next_checkup or 'Not scheduled' }}</p>
+    <p><strong>Reminder Type:</strong> 
+        {% if patient.reminder_type == 'both' %}
+            Both (6-month & 3-month)
+        {% elif patient.reminder_type == 'cleaning' %}
+            6-Month Cleaning Only
+        {% else %}
+            3-Month Checkup Only
+        {% endif %}
+    </p>
+    {% if patient.next_cleaning %}
+        <p><strong>Next Cleaning:</strong> {{ patient.next_cleaning }}</p>
+    {% endif %}
+    {% if patient.next_checkup %}
+        <p><strong>Next Checkup:</strong> {{ patient.next_checkup }}</p>
+    {% endif %}
 </div>
 
 <div class="card" style="padding: 20px; border-radius: 12px;">
     <h3>WhatsApp Reminder Message</h3>
     
     <div style="background: #e5ddd5; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-        <p style="margin: 0;" id="messagePreview">
-            🦷 Dental Reminder: {{ patient.name }}, 
-            {% if reminder_type == 'cleaning' %}
-                your 6-month cleaning is due on {{ patient.next_cleaning }}.
-            {% elif reminder_type == 'checkup' %}
-                your 3-month checkup is due on {{ patient.next_checkup }}.
-            {% else %}
-                {% if patient.next_cleaning %}your cleaning is due on {{ patient.next_cleaning }}{% endif %}
-                {% if patient.next_cleaning and patient.next_checkup %} and {% endif %}
-                {% if patient.next_checkup %}your checkup is due on {{ patient.next_checkup }}{% endif %}.
-            {% endif %}
-            Please reply to confirm or schedule your appointment.
+        <p style="margin: 0; white-space: pre-line;" id="messagePreview">
+            🦷 Brilliant Bites Dental
+
+Dear {{ patient.name }},
+
+{% if patient.next_cleaning and patient.reminder_type in ['both', 'cleaning'] %}Your 6-month cleaning is due on {{ patient.next_cleaning }}.
+{% endif %}{% if patient.next_checkup and patient.reminder_type in ['both', 'checkup'] %}Your 3-month checkup is due on {{ patient.next_checkup }}.
+{% endif %}
+Please reply to confirm or call us at 067 797 7404 to schedule.
         </p>
     </div>
     
     <div class="form-group">
         <label>Message (you can edit before sending)</label>
-        <textarea id="message" rows="4" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">🦷 Dental Reminder: {{ patient.name }}, {% if reminder_type == 'cleaning' %}your 6-month cleaning is due on {{ patient.next_cleaning }}.{% elif reminder_type == 'checkup' %}your 3-month checkup is due on {{ patient.next_checkup }}.{% else %}{% if patient.next_cleaning %}your cleaning is due on {{ patient.next_cleaning }}{% endif %}{% if patient.next_cleaning and patient.next_checkup %} and {% endif %}{% if patient.next_checkup %}your checkup is due on {{ patient.next_checkup }}{% endif %}.{% endif %} Please reply to confirm or schedule your appointment.</textarea>
+        <textarea id="message" rows="6" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: monospace;">🦷 Brilliant Bites Dental
+
+Dear {{ patient.name }},
+
+{% if patient.next_cleaning and patient.reminder_type in ['both', 'cleaning'] %}Your 6-month cleaning is due on {{ patient.next_cleaning }}.
+{% endif %}{% if patient.next_checkup and patient.reminder_type in ['both', 'checkup'] %}Your 3-month checkup is due on {{ patient.next_checkup }}.
+{% endif %}
+Please reply to confirm or call us at 067 797 7404 to schedule.</textarea>
     </div>
     
     <div class="form-group">
-        <label>Or choose a template:</label>
+        <label>Quick Templates:</label>
         <select id="templateSelect" onchange="updateMessage()" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
-            <option value="standard">Standard Reminder</option>
-            <option value="overdue">Overdue Appointment</option>
-            <option value="confirmation">Confirmation Request</option>
-            <option value="reschedule">Reschedule Offer</option>
+            <option value="standard">📋 Standard Reminder</option>
+            <option value="overdue">⚠️ Overdue Appointment</option>
+            <option value="confirmation">✅ Confirmation Request</option>
+            <option value="reschedule">📅 Reschedule Offer</option>
         </select>
     </div>
     
     <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
-    <a href="https://wa.me/{{ patient.phone|replace('+', '')|replace(' ', '')|replace('-', '') }}?text={{ message|urlencode if message else '' }}"
-       target="_blank"
-       class="btn"
-       style="background: #25D366; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
-        📱 Open WhatsApp & Send
-    </a>
-    
-    <form method="POST" action="/log_reminder/{{ patient.id }}" style="display: inline-block;">
-        <input type="hidden" name="reminder_type" value="{{ reminder_type }}">
-        <button type="submit" class="btn" style="background: #6c757d; padding: 12px 24px;">
-            📝 Log This Reminder (Click After Sending)
-        </button>
-    </form>
-    
-    <a href="/patients" class="btn" style="background: #6c757d; padding: 12px 24px; text-decoration: none;">Cancel</a>
+        {% set message_text = "🦷 Brilliant Bites Dental%0A%0ADear " + patient.name|replace(' ', '%20') + ",%0A%0A" %}
+        {% if patient.next_cleaning and patient.reminder_type in ['both', 'cleaning'] %}
+            {% set message_text = message_text + "Your%206-month%20cleaning%20is%20due%20on%20" + patient.next_cleaning + ".%0A" %}
+        {% endif %}
+        {% if patient.next_checkup and patient.reminder_type in ['both', 'checkup'] %}
+            {% set message_text = message_text + "Your%203-month%20checkup%20is%20due%20on%20" + patient.next_checkup + ".%0A" %}
+        {% endif %}
+        {% set message_text = message_text + "%0APlease%20reply%20to%20confirm%20or%20call%20us%20at%20067%20797%207404%20to%20schedule." %}
+        
+        <a href="https://wa.me/{{ patient.phone|replace('+', '')|replace(' ', '')|replace('-', '') }}?text={{ message_text }}"
+           id="whatsappLink"
+           target="_blank"
+           class="btn"
+           style="background: #25D366; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
+            📱 Open WhatsApp & Send
+        </a>
+        
+        <form method="POST" action="/log_reminder/{{ patient.id }}" style="display: inline-block;">
+            <input type="hidden" name="reminder_type" value="{{ reminder_type }}">
+            <button type="submit" class="btn" style="background: #6c757d; padding: 12px 24px; cursor: pointer;">
+                📝 Log This Reminder (Click After Sending)
+            </button>
+        </form>
+        
+        <a href="/patients" class="btn" style="background: #6c757d; padding: 12px 24px; text-decoration: none;">Cancel</a>
+    </div>
 </div>
+
+<div style="margin-top: 20px; padding: 10px; background: #fff3cd; border-radius: 8px;">
+    <small>💡 Tip: 
+        1. Click "Open WhatsApp & Send" to open WhatsApp<br>
+        2. Review and send the message in WhatsApp<br>
+        3. Come back and click "Log This Reminder" to save to history
+    </small>
 </div>
 
 <script>
@@ -70,56 +105,60 @@
         const patientName = "{{ patient.name }}";
         const cleaningDate = "{{ patient.next_cleaning or '' }}";
         const checkupDate = "{{ patient.next_checkup or '' }}";
+        const reminderType = "{{ patient.reminder_type }}";
         
         let message = "";
         
         if (template === 'standard') {
-            message = `🦷 Dental Reminder: ${patientName}, your ${cleaningDate ? 'cleaning is due on ' + cleaningDate : ''}${cleaningDate && checkupDate ? ' and ' : ''}${checkupDate ? 'checkup is due on ' + checkupDate : ''}. Please reply to confirm or schedule your appointment.`;
+            message = `🦷 Brilliant Bites Dental\n\nDear ${patientName},\n\n`;
+            if (cleaningDate && (reminderType === 'both' || reminderType === 'cleaning')) {
+                message += `Your 6-month cleaning is due on ${cleaningDate}.\n`;
+            }
+            if (checkupDate && (reminderType === 'both' || reminderType === 'checkup')) {
+                message += `Your 3-month checkup is due on ${checkupDate}.\n`;
+            }
+            message += `\nPlease reply to confirm or call us at 067 797 7404 to schedule.`;
         } else if (template === 'overdue') {
-            message = `⚠️ ${patientName}, your appointment is now overdue. Please contact us immediately to reschedule. ${cleaningDate ? 'Cleaning was due: ' + cleaningDate : ''} ${checkupDate ? 'Checkup was due: ' + checkupDate : ''}`;
+            message = `⚠️ Brilliant Bites Dental\n\nDear ${patientName},\n\nYour appointment is now overdue.`;
+            if (cleaningDate) {
+                message += `\nCleaning was due: ${cleaningDate}`;
+            }
+            if (checkupDate) {
+                message += `\nCheckup was due: ${checkupDate}`;
+            }
+            message += `\n\nPlease contact us immediately at 067 797 7404 to reschedule.`;
         } else if (template === 'confirmation') {
-            message = `✅ ${patientName}, please confirm your upcoming appointment. Reply YES to confirm or NO to reschedule. ${cleaningDate ? 'Cleaning: ' + cleaningDate : ''} ${checkupDate ? 'Checkup: ' + checkupDate : ''}`;
+            message = `✅ Brilliant Bites Dental\n\nDear ${patientName},\n\nPlease confirm your upcoming appointment:`;
+            if (cleaningDate) {
+                message += `\n• Cleaning: ${cleaningDate}`;
+            }
+            if (checkupDate) {
+                message += `\n• Checkup: ${checkupDate}`;
+            }
+            message += `\n\nReply YES to confirm or NO to reschedule.\nCall us at 067 797 7404 for any changes.`;
         } else if (template === 'reschedule') {
-            message = `📅 ${patientName}, we need to reschedule your appointment. Please call our office at your earliest convenience.`;
+            message = `📅 Brilliant Bites Dental\n\nDear ${patientName},\n\nWe need to reschedule your appointment.\n\nPlease call our office at 067 797 7404 to find a new time that works for you.\n\nWe apologize for any inconvenience.`;
         }
         
         messageField.value = message;
         
-        // Update the WhatsApp link
-        const encodedMessage = encodeURIComponent(message);
+        // Update the WhatsApp link with the new message
+        const encodedMessage = encodeURIComponent(message).replace(/%0A/g, '%0A');
         const phoneNumber = "{{ patient.phone|replace('+', '')|replace(' ', '')|replace('-', '') }}";
         const whatsappLink = document.getElementById('whatsappLink');
         whatsappLink.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
     }
     
-    // Update preview when message changes
+    // Update preview when message is manually edited
     document.getElementById('message').addEventListener('input', function() {
         const encodedMessage = encodeURIComponent(this.value);
         const phoneNumber = "{{ patient.phone|replace('+', '')|replace(' ', '')|replace('-', '') }}";
-        document.getElementById('whatsappLink').href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+        const whatsappLink = document.getElementById('whatsappLink');
+        whatsappLink.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
     });
     
     // Initial update
     updateMessage();
-	
-// Parse phone number for WhatsApp (removes + sign for wa.me)
-function getWhatsAppNumber(phone) {
-    if (!phone) return '';
-    
-    // Remove spaces and dashes
-    let cleaned = phone.replace(/[\s\-]/g, '');
-    
-    // WhatsApp links work with or without +, but better without
-    if (cleaned.startsWith('+')) {
-        return cleaned.substring(1);  // Remove the + for wa.me
-    }
-    
-    return cleaned;
-}
-
-const phoneNumber = getWhatsAppNumber("{{ patient.phone }}");
-const whatsappLink = document.getElementById('whatsappLink');
-whatsappLink.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
 </script>
 
 <style>
@@ -131,9 +170,21 @@ whatsappLink.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
     textarea {
         font-family: monospace;
         font-size: 14px;
+        resize: vertical;
     }
     select {
         cursor: pointer;
+    }
+    #messagePreview {
+        white-space: pre-line;
+        font-family: monospace;
+        font-size: 13px;
+    }
+    @media (max-width: 768px) {
+        .btn {
+            padding: 8px 16px !important;
+            font-size: 12px !important;
+        }
     }
 </style>
 {% endblock %}
